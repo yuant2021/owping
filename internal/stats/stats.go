@@ -6,7 +6,7 @@ import (
 	"net/netip"
 	"sort"
 
-	"owping/internal/owamp"
+	"github.com/yuant2021/owping/internal/owamp"
 )
 
 // Endpoint is one side of a session as displayed.

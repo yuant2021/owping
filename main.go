@@ -11,7 +11,7 @@ import (
 	"io"
 	"os"
 
-	"owping/internal/owamp"
+	"github.com/yuant2021/owping/internal/owamp"
 )
 
 // version is set at build time with -ldflags "-X main.version=...".

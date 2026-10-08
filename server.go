@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"owping/internal/owamp"
+	"github.com/yuant2021/owping/internal/owamp"
 )
 
 func runServer(o *options) int {

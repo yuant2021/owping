@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"owping/internal/owamp"
+	"github.com/yuant2021/owping/internal/owamp"
 )
 
 // TestSummarize checks loss, duplicate, reordering, delay and TTL

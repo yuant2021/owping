@@ -10,8 +10,8 @@ import (
 	"syscall"
 	"time"
 
-	"owping/internal/owamp"
-	"owping/internal/stats"
+	"github.com/yuant2021/owping/internal/owamp"
+	"github.com/yuant2021/owping/internal/stats"
 )
 
 // clientDefaultPorts is owping's default test port range.

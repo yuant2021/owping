@@ -7,7 +7,7 @@ import (
 	"math"
 	"sort"
 
-	"owping/internal/owamp"
+	"github.com/yuant2021/owping/internal/owamp"
 )
 
 // Units selects the time unit of printed delays.

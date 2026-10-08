@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"owping/internal/owamp"
+	"github.com/yuant2021/owping/internal/owamp"
 )
 
 // maxSeconds bounds user-supplied intervals.
