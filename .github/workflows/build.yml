@@ -1,0 +1,112 @@
+name: Build
+
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version: stable
+          cache: false # no module dependencies
+
+      - name: gofmt
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "::error::files need gofmt: $unformatted"
+            exit 1
+          fi
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go test
+        run: go test -race -count=1 ./...
+
+  build:
+    name: Build Linux binaries
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # tags for the version string
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version: stable
+          cache: false
+
+      - name: Cross-compile static binaries
+        env:
+          CGO_ENABLED: '0'
+          GOOS: linux
+        run: |
+          version="$(git describe --tags --always --dirty)"
+          echo "VERSION=${version}" >> "$GITHUB_ENV"
+          mkdir -p dist
+          # GOARCH[:variant] - variant is GOARM for arm, GOMIPS for mips.
+          for target in amd64 386 arm64 arm:7 arm:6 riscv64 loong64 \
+                        ppc64le s390x mips:softfloat mipsle:softfloat mips64 mips64le; do
+            arch="${target%%:*}"
+            variant="${target#"$arch"}"; variant="${variant#:}"
+            name="owping-linux-${arch}"
+            case "$arch" in
+              arm) export GOARM="$variant"; name="${name}v${variant}" ;;
+              mips|mipsle) export GOMIPS="$variant"; name="${name}-${variant}" ;;
+            esac
+            echo "building ${name}"
+            GOARCH="$arch" go build -trimpath \
+              -ldflags "-s -w -X main.version=${version}" \
+              -o "dist/${name}" .
+            unset GOARM GOMIPS
+          done
+          (cd dist && sha256sum owping-* > SHA256SUMS)
+
+      - name: Smoke test
+        run: |
+          file dist/owping-linux-amd64
+          file dist/owping-linux-amd64 | grep -q 'statically linked'
+          dist/owping-linux-amd64 -V
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: owping-${{ env.VERSION }}
+          path: dist/
+          if-no-files-found: error
+
+  release:
+    name: Publish release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v3
+        with:
+          files: dist/*
+          generate_release_notes: true
+          fail_on_unmatched_files: true
